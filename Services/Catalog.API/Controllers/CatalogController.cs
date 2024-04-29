@@ -1,8 +1,6 @@
 ﻿using Catalog.API.Interfaces.Manager;
-using Catalog.API.Manager;
 using Catalog.API.Models;
 using CoreApiResponse;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using System.Net;
@@ -21,8 +19,15 @@ namespace Catalog.API.Controllers
             _logger = logger;
         }
 
+        [HttpGet("test-exception")]
+        public IActionResult TestException()
+        {
+            throw new Exception("This is a test exception.");
+        }
+
+
         [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<Product>),(int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(IEnumerable<Product>), (int)HttpStatusCode.OK)]
         public IActionResult GetProducts()
         {
             try
@@ -30,10 +35,10 @@ namespace Catalog.API.Controllers
                 var products = _productManager.GetAll();
                 return CustomResult("Data load sucessfully.", products);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                return CustomResult($"{ex.Message}",HttpStatusCode.BadRequest);
-            }            
+                return CustomResult($"{ex.Message}", HttpStatusCode.BadRequest);
+            }
         }
 
         [HttpGet]
@@ -68,22 +73,22 @@ namespace Catalog.API.Controllers
 
 
         [HttpPost]
-        [ProducesResponseType(typeof(Product),(int)HttpStatusCode.Created)]
-        public IActionResult CreateProduct([FromBody]Product product)
+        [ProducesResponseType(typeof(Product), (int)HttpStatusCode.Created)]
+        public IActionResult CreateProduct([FromBody] Product product)
         {
             try
             {
-                product.Id=ObjectId.GenerateNewId().ToString();
+                product.Id = ObjectId.GenerateNewId().ToString();
                 bool isSaved = _productManager.Add(product);
-                if(isSaved)
+                if (isSaved)
                 {
-                    return CustomResult("Product has been save successfully.", product,HttpStatusCode.Created);
+                    return CustomResult("Product has been save successfully.", product, HttpStatusCode.Created);
                 }
-                return CustomResult("Product saved failed.",product,HttpStatusCode.BadRequest);
+                return CustomResult("Product saved failed.", product, HttpStatusCode.BadRequest);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                return CustomResult(ex.Message,HttpStatusCode.BadRequest);
+                return CustomResult(ex.Message, HttpStatusCode.BadRequest);
             }
         }
 
@@ -97,7 +102,7 @@ namespace Catalog.API.Controllers
                 {
                     return CustomResult("Data not found.", HttpStatusCode.NotFound);
                 }
-                bool isUpdated = _productManager.Update(product.Id,product);
+                bool isUpdated = _productManager.Update(product.Id, product);
                 if (isUpdated)
                 {
                     return CustomResult("Product has been modified successfully.", product, HttpStatusCode.OK);

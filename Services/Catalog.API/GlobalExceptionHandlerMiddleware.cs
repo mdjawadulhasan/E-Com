@@ -1,33 +1,40 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Text.Json;
 
-public class GlobalExceptionHandlerMiddleware
+public class GlobalExceptionHandlerMiddleware : IMiddleware
 {
-    private readonly RequestDelegate _next;
+    private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
 
-    public GlobalExceptionHandlerMiddleware(RequestDelegate next)
+    public GlobalExceptionHandlerMiddleware(ILogger<GlobalExceptionHandlerMiddleware> logger)
     {
-        _next = next;
+        _logger = logger;
     }
 
-    public async Task Invoke(HttpContext context)
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
         try
         {
-            await _next(context);
+            await next(context);
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(context, ex);
-        }
-    }
+            _logger.LogError(ex, ex.Message);
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
-    {
-        var code = HttpStatusCode.InternalServerError;
-        var result = JsonConvert.SerializeObject(new { error = exception.Message });
-        context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)code;
-        return context.Response.WriteAsync(result);
+            ProblemDetails problem = new()
+            {
+                Status = (int)HttpStatusCode.InternalServerError,
+                Type = "Server Error",
+                Title = "Server Eror",
+                Detail = "An Internal Server Error Has Occured "
+            };
+
+            string json =JsonSerializer.Serialize(problem);
+            context.Response.ContentType = "application/json";
+
+            await context.Response.WriteAsync(json);
+
+        }
     }
 }
